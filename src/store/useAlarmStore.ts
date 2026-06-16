@@ -98,7 +98,8 @@ const initialAlarmHistory: Alarm[] = [
     acknowledged: true,
     acknowledgedBy: '系统自动',
     acknowledgedAt: new Date(now.getTime() - 1000 * 60 * 60 * 9.8),
-    status: 'acknowledged',
+    status: 'resolved',
+    resolvedAt: new Date(now.getTime() - 1000 * 60 * 60 * 9),
     batchId: 'GC20260616003',
     value: 4.1,
   },
@@ -153,9 +154,9 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
       localStorage.getItem(STORAGE_KEY),
       null as null | { activeAlarms: Alarm[]; alarmHistory: Alarm[] }
     );
-    if (stored && stored.activeAlarms && stored.activeAlarms.length > 0) {
+    if (stored && (stored.activeAlarms?.length > 0 || stored.alarmHistory?.length > 0)) {
       set({
-        activeAlarms: stored.activeAlarms,
+        activeAlarms: stored.activeAlarms || [],
         alarmHistory: stored.alarmHistory || [],
       });
     } else {
@@ -202,16 +203,8 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
           ? { ...alarm, acknowledged: true, acknowledgedBy: operatorName, acknowledgedAt: now, status: 'acknowledged' as AlarmStatus }
           : alarm
       );
-      const acknowledgedAlarm = state.activeAlarms.find((a) => a.id === alarmId);
-      const alarmToHistory: Alarm | null = acknowledgedAlarm
-        ? { ...acknowledgedAlarm, acknowledged: true, acknowledgedBy: operatorName, acknowledgedAt: now, status: 'acknowledged' as AlarmStatus }
-        : null;
-
       return {
         activeAlarms: updatedAlarms,
-        alarmHistory: alarmToHistory
-          ? [alarmToHistory, ...state.alarmHistory].slice(0, MAX_HISTORY_ALARMS)
-          : state.alarmHistory,
       };
     });
     get().saveToStorage();
@@ -220,23 +213,13 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
   acknowledgeAllAlarms: (operatorName = '操作员') => {
     set((state) => {
       const now = new Date();
-      const unacknowledged = state.activeAlarms.filter((a) => !a.acknowledged);
       const updatedAlarms = state.activeAlarms.map((alarm) =>
         !alarm.acknowledged
           ? { ...alarm, acknowledged: true, acknowledgedBy: operatorName, acknowledgedAt: now, status: 'acknowledged' as AlarmStatus }
           : alarm
       );
-      const newHistoryItems = unacknowledged.map((a) => ({
-        ...a,
-        acknowledged: true,
-        acknowledgedBy: operatorName,
-        acknowledgedAt: now,
-        status: 'acknowledged' as AlarmStatus,
-      }));
-
       return {
         activeAlarms: updatedAlarms,
-        alarmHistory: [...newHistoryItems, ...state.alarmHistory].slice(0, MAX_HISTORY_ALARMS),
       };
     });
     get().saveToStorage();
@@ -253,21 +236,18 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
     set((state) => {
       const now = new Date();
       const resolvedAlarm = state.activeAlarms.find((a) => a.id === alarmId);
-      if (!resolvedAlarm) {
-        const historyAlarm = state.alarmHistory.find((a) => a.id === alarmId);
-        if (!historyAlarm || historyAlarm.status === 'resolved') return state;
-        const updatedHistory = state.alarmHistory.map((alarm) =>
-          alarm.id === alarmId
-            ? { ...alarm, status: 'resolved' as AlarmStatus, resolvedAt: now }
-            : alarm
-        );
-        return { alarmHistory: updatedHistory };
-      }
+      if (!resolvedAlarm) return state;
       const updatedActive = state.activeAlarms.filter((a) => a.id !== alarmId);
       const resolved: Alarm = { ...resolvedAlarm, status: 'resolved' as AlarmStatus, resolvedAt: now };
+      const alreadyInHistory = state.alarmHistory.some((a) => a.id === alarmId);
+      const updatedHistory = alreadyInHistory
+        ? state.alarmHistory.map((alarm) =>
+            alarm.id === alarmId ? resolved : alarm
+          )
+        : [resolved, ...state.alarmHistory];
       return {
         activeAlarms: updatedActive,
-        alarmHistory: [resolved, ...state.alarmHistory].slice(0, MAX_HISTORY_ALARMS),
+        alarmHistory: updatedHistory.slice(0, MAX_HISTORY_ALARMS),
       };
     });
     get().saveToStorage();
@@ -277,26 +257,30 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
     set((state) => {
       const now = new Date();
       const activeToResolve = state.activeAlarms.filter(
-        (a) => a.moduleId === moduleId && a.status !== 'resolved'
+        (a) => a.moduleId === moduleId
       );
+      if (activeToResolve.length === 0) return state;
+      
       const remainingActive = state.activeAlarms.filter(
-        (a) => a.moduleId !== moduleId || a.status === 'resolved'
+        (a) => a.moduleId !== moduleId
       );
-      const resolvedActiveAlarms = activeToResolve.map((a) => ({
+      
+      const resolvedAlarms = activeToResolve.map((a) => ({
         ...a,
         status: 'resolved' as AlarmStatus,
         resolvedAt: now,
       }));
-
-      const updatedHistory = state.alarmHistory.map((alarm) =>
-        alarm.moduleId === moduleId && alarm.status !== 'resolved'
-          ? { ...alarm, status: 'resolved' as AlarmStatus, resolvedAt: now }
-          : alarm
-      );
-
+      
+      const existingHistoryIds = new Set(state.alarmHistory.map((a) => a.id));
+      const newHistoryAlarms = resolvedAlarms.filter((a) => !existingHistoryIds.has(a.id));
+      const updatedHistory = state.alarmHistory.map((alarm) => {
+        const resolved = resolvedAlarms.find((r) => r.id === alarm.id);
+        return resolved || alarm;
+      });
+      
       return {
         activeAlarms: remainingActive,
-        alarmHistory: [...resolvedActiveAlarms, ...updatedHistory].slice(0, MAX_HISTORY_ALARMS),
+        alarmHistory: [...newHistoryAlarms, ...updatedHistory].slice(0, MAX_HISTORY_ALARMS),
       };
     });
     get().saveToStorage();

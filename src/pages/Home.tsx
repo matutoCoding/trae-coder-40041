@@ -44,6 +44,16 @@ export default function Home() {
     return 'border-industrial-border';
   };
 
+  const moduleRoutes: Record<ModuleId, string> = {
+    'uncoiling': '/uncoiling',
+    'annealing': '/annealing',
+    'galvanizing': '/galvanizing',
+    'air-knife': '/air-knife',
+    'cooling': '/cooling',
+    'passivation': '/passivation',
+    'coiling': '/coiling',
+  };
+
   const moduleKeyParams: Record<ModuleId, string[]> = {
     'uncoiling': ['u1', 'u2'],
     'annealing': ['a2', 'a5'],
@@ -70,7 +80,7 @@ export default function Home() {
   };
 
   const handleModuleClick = (moduleId: ModuleId) => {
-    navigate(`/module/${moduleId}`);
+    navigate(moduleRoutes[moduleId]);
   };
 
   const getQualityColor = (level: string) => {

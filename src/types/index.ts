@@ -51,7 +51,7 @@ export interface ProductionBatch {
   endTime?: Date;
   status: BatchStatus;
   quality?: BatchQualityData;
-  recipeId?: string;
+  recipeIds?: Record<RecipeModuleId, string>;
 }
 
 export interface CoatingData {

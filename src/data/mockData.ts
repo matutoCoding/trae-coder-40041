@@ -129,7 +129,12 @@ export const productionBatches: ProductionBatch[] = [
     startTime: new Date(now.getTime() - 1000 * 60 * 30),
     status: 'running',
     quality: generateStableQuality('b1', 100),
-    recipeId: 'annealing_dx51d',
+    recipeIds: {
+      annealing: 'annealing_dx51d',
+      galvanizing: 'galvanizing_z100',
+      'air-knife': 'airknife_z100',
+      passivation: 'passivation_standard',
+    },
   },
   {
     id: 'b2',
@@ -142,7 +147,12 @@ export const productionBatches: ProductionBatch[] = [
     endTime: new Date(now.getTime() - 1000 * 60 * 30),
     status: 'completed',
     quality: generateStableQuality('b2', 100),
-    recipeId: 'annealing_dx52d',
+    recipeIds: {
+      annealing: 'annealing_dx52d',
+      galvanizing: 'galvanizing_z180',
+      'air-knife': 'airknife_z180',
+      passivation: 'passivation_eco',
+    },
   },
   {
     id: 'b3',
@@ -155,7 +165,12 @@ export const productionBatches: ProductionBatch[] = [
     endTime: new Date(now.getTime() - 1000 * 60 * 60 * 3),
     status: 'completed',
     quality: generateStableQuality('b3', 100),
-    recipeId: 'annealing_dc04',
+    recipeIds: {
+      annealing: 'annealing_dc04',
+      galvanizing: 'galvanizing_z275',
+      'air-knife': 'airknife_z275',
+      passivation: 'passivation_high_corrosion',
+    },
   },
 ];
 

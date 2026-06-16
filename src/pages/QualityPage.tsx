@@ -331,8 +331,8 @@ export default function QualityPage() {
         ];
 
         const getRecipeForModule = (moduleId: 'annealing' | 'galvanizing' | 'air-knife' | 'passivation') => {
-          if (batch.recipeId) {
-            const recipe = recipes.find((r) => r.id === batch.recipeId && r.moduleId === moduleId);
+          if (batch.recipeIds && batch.recipeIds[moduleId]) {
+            const recipe = recipes.find((r) => r.id === batch.recipeIds![moduleId]);
             if (recipe) return recipe;
           }
           const currentId = currentRecipes[moduleId];
