@@ -1,11 +1,14 @@
 import { ModulePageTemplate } from '@/components/ModulePageTemplate';
 import { TrendChart } from '@/components/TrendChart';
 import { DataCard } from '@/components/DataCard';
+import { RecipeSelector } from '@/components/RecipeSelector';
 import { useModuleData } from '@/store/useProductionStore';
+import { useHistoryStore } from '@/store/useHistoryStore';
 import { temperatureHistory } from '@/data/mockData';
 
 export default function GalvanizingPage() {
   const moduleData = useModuleData('galvanizing');
+  const getParameterHistory = useHistoryStore((state) => state.getParameterHistory);
 
   const compositionParams = [
     moduleData?.parameters.find(p => p.id === 'g2'),
@@ -19,6 +22,8 @@ export default function GalvanizingPage() {
       chartTitle="锌锅温度趋势"
       chartUnit="°C"
       chartColor="#FF6B00"
+      chartData={getParameterHistory('galvanizing_g1')}
+      headerExtra={<RecipeSelector moduleId="galvanizing" />}
     >
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <div>
@@ -83,7 +88,7 @@ export default function GalvanizingPage() {
 
         <div className="space-y-6">
           <TrendChart
-            data={temperatureHistory(0.2, 0.05)}
+            data={getParameterHistory('galvanizing_g2')}
             title="铝含量趋势"
             unit="%"
             color="#00C853"

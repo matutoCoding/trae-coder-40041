@@ -1,11 +1,13 @@
 import { Bell, Clock, User, Play, Pause } from 'lucide-react';
-import { useProductionStore, useUnacknowledgedAlarms } from '@/store/useProductionStore';
+import { useProductionStore } from '@/store/useProductionStore';
+import { useAlarmStore } from '@/store/useAlarmStore';
 import { StatusIndicator } from './StatusIndicator';
 import { useState, useEffect } from 'react';
 
 export function Header() {
   const { lineSpeed, targetSpeed, lineStatus, toggleLine, setLineSpeed } = useProductionStore();
-  const unacknowledgedAlarms = useUnacknowledgedAlarms();
+  const activeAlarms = useAlarmStore((state) => state.activeAlarms);
+  const unacknowledgedAlarms = activeAlarms.filter((a) => !a.acknowledged);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [speedInput, setSpeedInput] = useState(targetSpeed.toString());
   const [isEditingSpeed, setIsEditingSpeed] = useState(false);

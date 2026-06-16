@@ -1,12 +1,14 @@
 import { ModulePageTemplate } from '@/components/ModulePageTemplate';
 import { DataCard } from '@/components/DataCard';
 import { TrendChart } from '@/components/TrendChart';
+import { RecipeSelector } from '@/components/RecipeSelector';
 import { useModuleData } from '@/store/useProductionStore';
-import { temperatureHistory } from '@/data/mockData';
+import { useHistoryStore } from '@/store/useHistoryStore';
 import { useMemo } from 'react';
 
 export default function PassivationPage() {
   const moduleData = useModuleData('passivation');
+  const getParameterHistory = useHistoryStore((state) => state.getParameterHistory);
 
   const skinPassParams = useMemo(() => [
     moduleData?.parameters.find(p => p.id === 'p1'),
@@ -28,7 +30,8 @@ export default function PassivationPage() {
       chartTitle="光整轧制力趋势"
       chartUnit="kN"
       chartColor="#FFC107"
-      chartData={temperatureHistory(5000, 300)}
+      chartData={getParameterHistory('passivation_p2')}
+      headerExtra={<RecipeSelector moduleId="passivation" />}
     >
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <div>
@@ -95,7 +98,7 @@ export default function PassivationPage() {
           </div>
 
           <TrendChart
-            data={temperatureHistory(8.5, 1)}
+            data={getParameterHistory('passivation_p4')}
             title="钝化液浓度趋势"
             unit="g/L"
             color="#00C853"

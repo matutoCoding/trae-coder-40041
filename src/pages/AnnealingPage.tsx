@@ -2,11 +2,13 @@ import { ModulePageTemplate } from '@/components/ModulePageTemplate';
 import { TemperatureZoneDisplay } from '@/components/TemperatureZoneDisplay';
 import { TrendChart } from '@/components/TrendChart';
 import { DataCard } from '@/components/DataCard';
+import { RecipeSelector } from '@/components/RecipeSelector';
 import { useModuleData } from '@/store/useProductionStore';
-import { temperatureHistory } from '@/data/mockData';
+import { useHistoryStore } from '@/store/useHistoryStore';
 
 export default function AnnealingPage() {
   const moduleData = useModuleData('annealing');
+  const getParameterHistory = useHistoryStore((state) => state.getParameterHistory);
 
   const atmosphereParams = [
     moduleData?.parameters.find(p => p.id === 'a5'),
@@ -21,6 +23,8 @@ export default function AnnealingPage() {
       chartTitle="加热段温度趋势"
       chartUnit="°C"
       chartColor="#D50000"
+      chartData={getParameterHistory('annealing_a3')}
+      headerExtra={<RecipeSelector moduleId="annealing" />}
     >
       <div className="mb-6">
         <TemperatureZoneDisplay />
@@ -49,7 +53,7 @@ export default function AnnealingPage() {
 
         <div>
           <TrendChart
-            data={temperatureHistory(865, 8)}
+            data={getParameterHistory('annealing_a3')}
             title="均热段温度趋势"
             unit="°C"
             color="#FF6B00"
@@ -60,13 +64,13 @@ export default function AnnealingPage() {
 
       <div className="grid grid-cols-2 gap-6 mb-6">
         <TrendChart
-          data={temperatureHistory(250, 10)}
+          data={getParameterHistory('annealing_a2')}
           title="预热段温度趋势"
           unit="°C"
           color="#FFC107"
         />
         <TrendChart
-          data={temperatureHistory(450, 12)}
+          data={getParameterHistory('annealing_a2')}
           title="快冷段温度趋势"
           unit="°C"
           color="#3A6A9B"

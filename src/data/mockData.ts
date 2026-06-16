@@ -10,6 +10,7 @@ import type {
   TrendDataPoint,
   LineSpeedData,
 } from '@/types';
+import { generateStableQuality, generateStableCoatingHistory } from '@/lib/stableData';
 
 const now = new Date();
 
@@ -127,6 +128,8 @@ export const productionBatches: ProductionBatch[] = [
     weight: 25.5,
     startTime: new Date(now.getTime() - 1000 * 60 * 30),
     status: 'running',
+    quality: generateStableQuality('b1', 100),
+    recipeId: 'annealing_dx51d',
   },
   {
     id: 'b2',
@@ -138,6 +141,8 @@ export const productionBatches: ProductionBatch[] = [
     startTime: new Date(now.getTime() - 1000 * 60 * 60 * 3),
     endTime: new Date(now.getTime() - 1000 * 60 * 30),
     status: 'completed',
+    quality: generateStableQuality('b2', 100),
+    recipeId: 'annealing_dx52d',
   },
   {
     id: 'b3',
@@ -149,14 +154,15 @@ export const productionBatches: ProductionBatch[] = [
     startTime: new Date(now.getTime() - 1000 * 60 * 60 * 6),
     endTime: new Date(now.getTime() - 1000 * 60 * 60 * 3),
     status: 'completed',
+    quality: generateStableQuality('b3', 100),
+    recipeId: 'annealing_dc04',
   },
 ];
 
-export const coatingHistory: CoatingData[] = [
-  { id: 'cd1', batchId: 'b1', position: 'left', weight: 98.5, targetWeight: 100, deviation: -1.5, timestamp: new Date() },
-  { id: 'cd2', batchId: 'b1', position: 'center', weight: 100.2, targetWeight: 100, deviation: 0.2, timestamp: new Date() },
-  { id: 'cd3', batchId: 'b1', position: 'right', weight: 99.3, targetWeight: 100, deviation: -0.7, timestamp: new Date() },
-];
+export const coatingHistory: CoatingData[] = generateStableCoatingHistory(
+  ['b1', 'b2', 'b3'],
+  100
+);
 
 export const equipmentList: Equipment[] = [
   { id: 'eq1', name: '1号开卷机', moduleId: 'uncoiling', status: 'running', runningHours: 8520, lastMaintenance: new Date(now.getTime() - 1000 * 60 * 60 * 24 * 15) },

@@ -1,14 +1,16 @@
 import { ModulePageTemplate } from '@/components/ModulePageTemplate';
 import { DataCard } from '@/components/DataCard';
 import { TrendChart } from '@/components/TrendChart';
+import { RecipeSelector } from '@/components/RecipeSelector';
 import { useModuleData, useProductionStore } from '@/store/useProductionStore';
-import { temperatureHistory } from '@/data/mockData';
+import { useHistoryStore } from '@/store/useHistoryStore';
 import { useMemo } from 'react';
 
 export default function AirKnifePage() {
   const moduleData = useModuleData('air-knife');
   const batches = useProductionStore((state) => state.batches);
   const currentBatch = batches.find(b => b.status === 'running');
+  const getParameterHistory = useHistoryStore((state) => state.getParameterHistory);
 
   const coatingParams = useMemo(() => [
     moduleData?.parameters.find(p => p.id === 'ak5'),
@@ -35,7 +37,8 @@ export default function AirKnifePage() {
       chartTitle="中部锌层重量趋势"
       chartUnit="g/m²"
       chartColor="#00C853"
-      chartData={temperatureHistory(100, 8)}
+      chartData={getParameterHistory('air-knife_ak6')}
+      headerExtra={<RecipeSelector moduleId="air-knife" />}
     >
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <div>
@@ -122,7 +125,7 @@ export default function AirKnifePage() {
           </div>
 
           <TrendChart
-            data={temperatureHistory(0.5, 0.1)}
+            data={getParameterHistory('air-knife_ak1')}
             title="气刀压力趋势"
             unit="bar"
             color="#FF6B00"

@@ -3,6 +3,9 @@ export type ParameterTrend = 'up' | 'down' | 'stable';
 export type EquipmentStatus = 'running' | 'idle' | 'maintenance' | 'fault';
 export type BatchStatus = 'pending' | 'running' | 'completed' | 'scrapped';
 export type ModuleId = 'uncoiling' | 'annealing' | 'galvanizing' | 'air-knife' | 'cooling' | 'passivation' | 'coiling';
+export type AlarmLevel = 'info' | 'warning' | 'alarm';
+export type QualityLevel = '一级品' | '二级品' | '等外品' | '报废';
+export type RecipeModuleId = 'annealing' | 'galvanizing' | 'air-knife' | 'passivation';
 
 export interface ProcessParameter {
   id: string;
@@ -24,6 +27,18 @@ export interface TemperatureZone {
   deviation: number;
 }
 
+export interface BatchQualityData {
+  coatingWeightLeft: number;
+  coatingWeightCenter: number;
+  coatingWeightRight: number;
+  coatingWeightAvg: number;
+  adhesionLevel: number;
+  surfaceQuality: string;
+  qualityLevel: QualityLevel;
+  passivationThickness: number;
+  dimensionalAccuracy: number;
+}
+
 export interface ProductionBatch {
   id: string;
   coilNo: string;
@@ -34,6 +49,8 @@ export interface ProductionBatch {
   startTime: Date;
   endTime?: Date;
   status: BatchStatus;
+  quality?: BatchQualityData;
+  recipeId?: string;
 }
 
 export interface CoatingData {
@@ -59,9 +76,11 @@ export interface Alarm {
   id: string;
   timestamp: Date;
   moduleId: ModuleId;
-  level: 'info' | 'warning' | 'alarm';
+  level: AlarmLevel;
   message: string;
   acknowledged: boolean;
+  acknowledgedBy?: string;
+  acknowledgedAt?: Date;
 }
 
 export interface TrendDataPoint {
@@ -80,4 +99,31 @@ export interface LineSpeedData {
   time: string;
   speed: number;
   target: number;
+}
+
+export interface RecipeParameterTarget {
+  paramId: string;
+  target: number;
+}
+
+export interface Recipe {
+  id: string;
+  name: string;
+  moduleId: RecipeModuleId;
+  steelGrade?: string;
+  coatingClass?: string;
+  description: string;
+  parameterTargets: RecipeParameterTarget[];
+  zoneSetPoints?: { zoneId: string; setPoint: number }[];
+}
+
+export interface ParameterHistoryState {
+  lineSpeedHistory: LineSpeedData[];
+  parameterHistory: Record<string, TrendDataPoint[]>;
+  lastUpdateTime: number;
+}
+
+export interface AlarmHistoryState {
+  activeAlarms: Alarm[];
+  alarmHistory: Alarm[];
 }

@@ -12,6 +12,7 @@ interface ModulePageTemplateProps {
   description: string;
   children?: ReactNode;
   extraContent?: ReactNode;
+  headerExtra?: ReactNode;
   chartTitle?: string;
   chartUnit?: string;
   chartData?: TrendDataPoint[];
@@ -23,6 +24,7 @@ export function ModulePageTemplate({
   description,
   children,
   extraContent,
+  headerExtra,
   chartTitle,
   chartUnit = '°C',
   chartData,
@@ -45,8 +47,11 @@ export function ModulePageTemplate({
     <div>
       <div className="mb-6">
         <div className="flex items-center gap-4 mb-2">
-          <h1 className="text-2xl font-bold text-industrial-text">{moduleNames[moduleId]}</h1>
-          <StatusIndicator status={moduleData.status} />
+          <div className="flex-1 flex items-center gap-4">
+            <h1 className="text-2xl font-bold text-industrial-text">{moduleNames[moduleId]}</h1>
+            <StatusIndicator status={moduleData.status} />
+          </div>
+          {headerExtra}
         </div>
         <p className="text-industrial-textSecondary">{description}</p>
       </div>

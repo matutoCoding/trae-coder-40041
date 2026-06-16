@@ -5,10 +5,12 @@ import { BatchInfoCard } from '@/components/BatchInfoCard';
 import { AlarmList } from '@/components/AlarmList';
 import { TrendChart } from '@/components/TrendChart';
 import { useProductionStore, useModuleData } from '@/store/useProductionStore';
-import { temperatureHistory } from '@/data/mockData';
+import { useHistoryStore } from '@/store/useHistoryStore';
 
 export default function Home() {
-  const { lineSpeed, lineSpeedHistory } = useProductionStore();
+  const { lineSpeed } = useProductionStore();
+  const lineSpeedHistory = useHistoryStore((state) => state.lineSpeedHistory);
+  const getParameterHistory = useHistoryStore((state) => state.getParameterHistory);
   const annealing = useModuleData('annealing');
   const galvanizing = useModuleData('galvanizing');
   const airKnife = useModuleData('air-knife');
@@ -88,13 +90,13 @@ export default function Home() {
 
           <div className="grid grid-cols-2 gap-6">
             <TrendChart
-              data={temperatureHistory(870, 15)}
+              data={getParameterHistory('annealing_a2')}
               title="加热段温度趋势"
               unit="°C"
               color="#D50000"
             />
             <TrendChart
-              data={temperatureHistory(460, 5)}
+              data={getParameterHistory('galvanizing_g1')}
               title="锌锅温度趋势"
               unit="°C"
               color="#FF6B00"

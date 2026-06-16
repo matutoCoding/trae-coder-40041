@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -15,49 +15,77 @@ import {
 } from 'recharts';
 import { Search, Filter, Download, FileText, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { StatusIndicator } from '@/components/StatusIndicator';
+import { AlarmHistoryPanel } from '@/components/AlarmHistoryPanel';
 import { useProductionStore } from '@/store/useProductionStore';
 import { moduleNames } from '@/data/mockData';
+import type { QualityLevel } from '@/types';
+import { generateStableQuality } from '@/lib/stableData';
 
-const coatingWeightData = Array.from({ length: 20 }, (_, i) => ({
-  name: `#${i + 1}`,
-  left: 95 + Math.random() * 10,
-  center: 98 + Math.random() * 6,
-  right: 96 + Math.random() * 9,
-  target: 100,
-}));
-
-const qualityDistribution = [
-  { name: '一级品', value: 68, color: '#00C853' },
-  { name: '二级品', value: 22, color: '#FFC107' },
-  { name: '等外品', value: 8, color: '#FF6B00' },
-  { name: '报废', value: 2, color: '#D50000' },
+const defectTrendData = [
+  { name: '1月', 表面缺陷: 125, 锌层缺陷: 82, 板形缺陷: 55 },
+  { name: '2月', 表面缺陷: 118, 锌层缺陷: 78, 板形缺陷: 52 },
+  { name: '3月', 表面缺陷: 112, 锌层缺陷: 75, 板形缺陷: 48 },
+  { name: '4月', 表面缺陷: 108, 锌层缺陷: 72, 板形缺陷: 46 },
+  { name: '5月', 表面缺陷: 102, 锌层缺陷: 68, 板形缺陷: 43 },
+  { name: '6月', 表面缺陷: 98, 锌层缺陷: 65, 板形缺陷: 40 },
+  { name: '7月', 表面缺陷: 95, 锌层缺陷: 62, 板形缺陷: 38 },
+  { name: '8月', 表面缺陷: 90, 锌层缺陷: 58, 板形缺陷: 35 },
+  { name: '9月', 表面缺陷: 86, 锌层缺陷: 55, 板形缺陷: 33 },
+  { name: '10月', 表面缺陷: 82, 锌层缺陷: 52, 板形缺陷: 30 },
+  { name: '11月', 表面缺陷: 78, 锌层缺陷: 48, 板形缺陷: 28 },
+  { name: '12月', 表面缺陷: 75, 锌层缺陷: 45, 板形缺陷: 25 },
 ];
 
-const defectTrendData = Array.from({ length: 12 }, (_, i) => ({
-  name: `${i + 1}月`,
-  表面缺陷: 120 - i * 5 + Math.random() * 10,
-  锌层缺陷: 80 - i * 3 + Math.random() * 8,
-  板形缺陷: 50 - i * 2 + Math.random() * 6,
-}));
+const qualityLevelStyles: Record<QualityLevel, { color: string; bg: string }> = {
+  '一级品': { color: 'text-industrial-success', bg: 'bg-industrial-success/20' },
+  '二级品': { color: 'text-industrial-warning', bg: 'bg-industrial-warning/20' },
+  '等外品': { color: 'text-industrial-orange', bg: 'bg-industrial-orange/20' },
+  '报废': { color: 'text-industrial-alarm', bg: 'bg-industrial-alarm/20' },
+};
 
 export default function QualityPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
   const batches = useProductionStore((state) => state.batches);
-  const coatingHistory = useProductionStore((state) => state.coatingHistory);
 
-  const filteredBatches = batches.filter(b =>
+  const batchesWithQuality = useMemo(() => {
+    return batches.map((batch) => ({
+      ...batch,
+      quality: batch.quality || generateStableQuality(batch.id, 100),
+    }));
+  }, [batches]);
+
+  const qualityDistribution = useMemo(() => {
+    const counts = { '一级品': 0, '二级品': 0, '等外品': 0, '报废': 0 };
+    batchesWithQuality.forEach((b) => {
+      if (b.quality) counts[b.quality.qualityLevel]++;
+    });
+    const total = batchesWithQuality.length || 1;
+    return [
+      { name: '一级品', value: Math.round((counts['一级品'] / total) * 100), color: '#00C853' },
+      { name: '二级品', value: Math.round((counts['二级品'] / total) * 100), color: '#FFC107' },
+      { name: '等外品', value: Math.round((counts['等外品'] / total) * 100), color: '#FF6B00' },
+      { name: '报废', value: Math.round((counts['报废'] / total) * 100), color: '#D50000' },
+    ];
+  }, [batchesWithQuality]);
+
+  const coatingWeightData = useMemo(() => {
+    return batchesWithQuality.map((batch, idx) => {
+      const q = batch.quality;
+      return {
+        name: `#${idx + 1}`,
+        left: q?.coatingWeightLeft || 0,
+        center: q?.coatingWeightCenter || 0,
+        right: q?.coatingWeightRight || 0,
+        target: 100,
+      };
+    });
+  }, [batchesWithQuality]);
+
+  const filteredBatches = batchesWithQuality.filter((b) =>
     b.coilNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     b.steelGrade.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const getQualityLevel = (batch: any) => {
-    const rand = Math.random();
-    if (rand < 0.68) return { level: '一级品', color: 'text-industrial-success', bg: 'bg-industrial-success/20' };
-    if (rand < 0.90) return { level: '二级品', color: 'text-industrial-warning', bg: 'bg-industrial-warning/20' };
-    if (rand < 0.98) return { level: '等外品', color: 'text-industrial-orange', bg: 'bg-industrial-orange/20' };
-    return { level: '报废', color: 'text-industrial-alarm', bg: 'bg-industrial-alarm/20' };
-  };
 
   return (
     <div>
@@ -230,8 +258,8 @@ export default function QualityPage() {
             </thead>
             <tbody>
               {filteredBatches.map((batch) => {
-                const quality = getQualityLevel(batch);
-                const coatingWeight = 95 + Math.random() * 10;
+                const q = batch.quality;
+                const qualityStyle = q ? qualityLevelStyles[q.qualityLevel] : qualityLevelStyles['一级品'];
                 return (
                   <tr key={batch.id}>
                     <td className="font-mono text-industrial-orange">{batch.coilNo}</td>
@@ -241,20 +269,28 @@ export default function QualityPage() {
                     <td className="font-mono text-xs">
                       {batch.startTime.toLocaleDateString('zh-CN')}
                     </td>
-                    <td className="font-mono">{coatingWeight.toFixed(1)}</td>
+                    <td className="font-mono">{q?.coatingWeightAvg.toFixed(1) || '-'}</td>
                     <td>
-                      <span className="px-2 py-0.5 bg-industrial-success/20 text-industrial-success text-xs rounded-sm">
-                        0级
+                      <span className={`px-2 py-0.5 text-xs rounded-sm ${
+                        q?.adhesionLevel === 0
+                          ? 'bg-industrial-success/20 text-industrial-success'
+                          : 'bg-industrial-warning/20 text-industrial-warning'
+                      }`}>
+                        {q?.adhesionLevel ?? 0}级
                       </span>
                     </td>
                     <td>
-                      <span className="px-2 py-0.5 bg-industrial-success/20 text-industrial-success text-xs rounded-sm">
-                        无缺陷
+                      <span className={`px-2 py-0.5 text-xs rounded-sm ${
+                        q?.surfaceQuality === '无缺陷' || q?.surfaceQuality === '无明显缺陷'
+                          ? 'bg-industrial-success/20 text-industrial-success'
+                          : 'bg-industrial-warning/20 text-industrial-warning'
+                      }`}>
+                        {q?.surfaceQuality || '-'}
                       </span>
                     </td>
                     <td>
-                      <span className={`px-2 py-0.5 text-xs rounded-sm ${quality.bg} ${quality.color}`}>
-                        {quality.level}
+                      <span className={`px-2 py-0.5 text-xs rounded-sm ${qualityStyle.bg} ${qualityStyle.color}`}>
+                        {q?.qualityLevel || '-'}
                       </span>
                     </td>
                     <td>
@@ -273,103 +309,129 @@ export default function QualityPage() {
         </div>
       </div>
 
-      {selectedBatch && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedBatch(null)}>
-          <div className="card-industrial p-6 w-[700px] max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-industrial-text mb-4">批次质量详情</h3>
-            <div className="space-y-4">
-              <div className="p-4 bg-industrial-bgLight/50 rounded-sm">
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <div className="text-industrial-textMuted">钢卷号</div>
-                    <div className="font-mono text-lg font-bold text-industrial-orange">
-                      {batches.find(b => b.id === selectedBatch)?.coilNo}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-industrial-textMuted">钢种规格</div>
-                    <div className="font-mono text-lg text-industrial-text">
-                      {batches.find(b => b.id === selectedBatch)?.steelGrade}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-industrial-textMuted">质量等级</div>
-                    <div className="text-lg font-bold text-industrial-success">一级品</div>
-                  </div>
-                </div>
-              </div>
+      <AlarmHistoryPanel />
 
-              <div>
-                <h4 className="text-sm font-medium text-industrial-textSecondary mb-2">各工艺段参数记录</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {Object.entries(moduleNames).map(([id, name]) => (
-                    <div key={id} className="p-3 bg-industrial-bgLight/30 rounded-sm">
-                      <div className="text-xs text-industrial-textMuted mb-1">{name}</div>
-                      <div className="flex items-center gap-2">
-                        <span className="status-indicator status-running" />
-                        <span className="text-sm text-industrial-text">参数正常</span>
+      {selectedBatch && (() => {
+        const batch = batchesWithQuality.find((b) => b.id === selectedBatch);
+        if (!batch || !batch.quality) return null;
+        const q = batch.quality;
+        const qStyle = qualityLevelStyles[q.qualityLevel];
+        const isQualified = (val: number, min: number, max: number) => val >= min && val <= max;
+
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedBatch(null)}>
+            <div className="card-industrial p-6 w-[700px] max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-xl font-bold text-industrial-text mb-4">批次质量详情</h3>
+              <div className="space-y-4">
+                <div className="p-4 bg-industrial-bgLight/50 rounded-sm">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <div className="text-industrial-textMuted">钢卷号</div>
+                      <div className="font-mono text-lg font-bold text-industrial-orange">{batch.coilNo}</div>
+                    </div>
+                    <div>
+                      <div className="text-industrial-textMuted">钢种规格</div>
+                      <div className="font-mono text-lg text-industrial-text">
+                        {batch.steelGrade} {batch.thickness}×{batch.width}mm
                       </div>
                     </div>
-                  ))}
+                    <div>
+                      <div className="text-industrial-textMuted">质量等级</div>
+                      <div className={`text-lg font-bold ${qStyle.color}`}>{q.qualityLevel}</div>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <h4 className="text-sm font-medium text-industrial-textSecondary mb-2">检测项目结果</h4>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-industrial-textMuted">
-                      <th className="text-left pb-2">检测项目</th>
-                      <th className="text-right pb-2">检测结果</th>
-                      <th className="text-right pb-2">标准要求</th>
-                      <th className="text-center pb-2">判定</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-industrial-text">
-                    <tr>
-                      <td>锌层重量</td>
-                      <td className="text-right font-mono">100.5 g/m²</td>
-                      <td className="text-right font-mono">100±5 g/m²</td>
-                      <td className="text-center text-industrial-success">合格</td>
-                    </tr>
-                    <tr>
-                      <td>锌层附着力</td>
-                      <td className="text-right">0级</td>
-                      <td className="text-right">≤1级</td>
-                      <td className="text-center text-industrial-success">合格</td>
-                    </tr>
-                    <tr>
-                      <td>表面质量</td>
-                      <td className="text-right">无明显缺陷</td>
-                      <td className="text-right">无肉眼可见缺陷</td>
-                      <td className="text-center text-industrial-success">合格</td>
-                    </tr>
-                    <tr>
-                      <td>钝化涂层</td>
-                      <td className="text-right font-mono">1.2 μm</td>
-                      <td className="text-right font-mono">0.8-2.0 μm</td>
-                      <td className="text-center text-industrial-success">合格</td>
-                    </tr>
-                    <tr>
-                      <td>尺寸精度</td>
-                      <td className="text-right font-mono">±0.02 mm</td>
-                      <td className="text-right font-mono">±0.04 mm</td>
-                      <td className="text-center text-industrial-success">合格</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+                <div>
+                  <h4 className="text-sm font-medium text-industrial-textSecondary mb-2">各工艺段参数记录</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(moduleNames).map(([id, name]) => (
+                      <div key={id} className="p-3 bg-industrial-bgLight/30 rounded-sm">
+                        <div className="text-xs text-industrial-textMuted mb-1">{name}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="status-indicator status-running" />
+                          <span className="text-sm text-industrial-text">参数正常</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-industrial-border">
-                <button className="btn-secondary" onClick={() => setSelectedBatch(null)}>关闭</button>
-                <button className="btn-industrial flex items-center gap-2">
-                  <Download className="w-4 h-4" /> 下载质保书
-                </button>
+                <div>
+                  <h4 className="text-sm font-medium text-industrial-textSecondary mb-2">检测项目结果</h4>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-industrial-textMuted">
+                        <th className="text-left pb-2">检测项目</th>
+                        <th className="text-right pb-2">检测结果</th>
+                        <th className="text-right pb-2">标准要求</th>
+                        <th className="text-center pb-2">判定</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-industrial-text">
+                      <tr>
+                        <td>锌层重量(左/中/右)</td>
+                        <td className="text-right font-mono">
+                          {q.coatingWeightLeft}/{q.coatingWeightCenter}/{q.coatingWeightRight} g/m²
+                        </td>
+                        <td className="text-right font-mono">100±5 g/m²</td>
+                        <td className={`text-center ${
+                          isQualified(q.coatingWeightAvg, 95, 105) ? 'text-industrial-success' : 'text-industrial-warning'
+                        }`}>
+                          {isQualified(q.coatingWeightAvg, 95, 105) ? '合格' : '偏差'}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>锌层附着力</td>
+                        <td className="text-right">{q.adhesionLevel}级</td>
+                        <td className="text-right">≤1级</td>
+                        <td className={`text-center ${
+                          q.adhesionLevel <= 1 ? 'text-industrial-success' : 'text-industrial-warning'
+                        }`}>
+                          {q.adhesionLevel <= 1 ? '合格' : '不合格'}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>表面质量</td>
+                        <td className="text-right">{q.surfaceQuality}</td>
+                        <td className="text-right">无肉眼可见缺陷</td>
+                        <td className="text-center text-industrial-success">合格</td>
+                      </tr>
+                      <tr>
+                        <td>钝化涂层</td>
+                        <td className="text-right font-mono">{q.passivationThickness} μm</td>
+                        <td className="text-right font-mono">0.8-2.0 μm</td>
+                        <td className={`text-center ${
+                          isQualified(q.passivationThickness, 0.8, 2.0) ? 'text-industrial-success' : 'text-industrial-warning'
+                        }`}>
+                          {isQualified(q.passivationThickness, 0.8, 2.0) ? '合格' : '偏差'}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>尺寸精度</td>
+                        <td className="text-right font-mono">±{q.dimensionalAccuracy} mm</td>
+                        <td className="text-right font-mono">±0.04 mm</td>
+                        <td className={`text-center ${
+                          q.dimensionalAccuracy <= 0.04 ? 'text-industrial-success' : 'text-industrial-warning'
+                        }`}>
+                          {q.dimensionalAccuracy <= 0.04 ? '合格' : '偏差'}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-industrial-border">
+                  <button className="btn-secondary" onClick={() => setSelectedBatch(null)}>关闭</button>
+                  <button className="btn-industrial flex items-center gap-2">
+                    <Download className="w-4 h-4" /> 下载质保书
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
