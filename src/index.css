@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: #E8EAEF;
+  background-color: #1A1D24;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 1280px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1A1D24 0%, #14171D 100%);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #242832;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3A4050;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4A5264;
+}
+
+/* 工业风格按钮 */
+@layer components {
+  .btn-industrial {
+    @apply px-4 py-2 bg-industrial-orange text-white font-medium rounded-sm;
+    @apply hover:bg-industrial-orangeDark transition-all duration-200;
+    @apply active:scale-95 border border-industrial-orange/30;
+    @apply shadow-industrial hover:shadow-glow-orange;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-industrial-bgCard text-industrial-text font-medium rounded-sm;
+    @apply hover:bg-industrial-bgLight transition-all duration-200;
+    @apply active:scale-95 border border-industrial-border;
+  }
+
+  .card-industrial {
+    @apply bg-industrial-bgCard border border-industrial-border rounded-sm;
+    @apply shadow-industrial transition-all duration-300;
+    @apply hover:border-industrial-borderLight;
+  }
+
+  .status-indicator {
+    @apply w-3 h-3 rounded-full inline-block;
+  }
+
+  .status-running {
+    @apply bg-industrial-success shadow-glow-green animate-pulse-glow text-industrial-success;
+  }
+
+  .status-idle {
+    @apply bg-industrial-warning shadow-glow-yellow text-industrial-warning;
+  }
+
+  .status-alarm {
+    @apply bg-industrial-alarm shadow-glow-red animate-blink text-industrial-alarm;
+  }
+
+  .status-fault {
+    @apply bg-industrial-alarm shadow-glow-red text-industrial-alarm;
+  }
+
+  .data-value {
+    @apply font-mono text-2xl font-bold text-industrial-text;
+  }
+
+  .data-label {
+    @apply text-sm text-industrial-textSecondary;
+  }
+
+  .data-unit {
+    @apply text-sm text-industrial-textMuted ml-1;
+  }
+
+  .section-title {
+    @apply text-lg font-semibold text-industrial-text mb-4 pb-2;
+    @apply border-b border-industrial-border;
+  }
+
+  .flow-line {
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      #FF6B00 20%, 
+      #FF6B00 50%, 
+      #FF6B00 80%, 
+      transparent 100%);
+    background-size: 200% 100%;
+    animation: flow 3s linear infinite;
+  }
+}
+
+/* 表格样式 */
+@layer components {
+  .table-industrial {
+    @apply w-full border-collapse;
+  }
+
+  .table-industrial th {
+    @apply bg-industrial-bgLight text-industrial-textSecondary font-medium;
+    @apply px-4 py-3 text-left border-b border-industrial-border text-sm;
+  }
+
+  .table-industrial td {
+    @apply px-4 py-3 border-b border-industrial-border/50 text-sm;
+  }
+
+  .table-industrial tr:hover td {
+    @apply bg-industrial-bgLight/50;
+  }
+}
