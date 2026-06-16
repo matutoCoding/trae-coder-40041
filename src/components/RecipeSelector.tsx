@@ -21,8 +21,8 @@ export function RecipeSelector({ moduleId, title }: RecipeSelectorProps) {
   const recipes = useRecipeStore((state) => state.getRecipesByModule(moduleId));
   const currentRecipe = useRecipeStore((state) => state.getCurrentRecipe(moduleId));
   const applyRecipe = useRecipeStore((state) => state.applyRecipe);
-  const updateModuleParameter = useProductionStore((state) => state.updateModuleParameter);
-  const updateAnnealingZone = useProductionStore((state) => state.updateAnnealingZone);
+  const updateModuleParameterTarget = useProductionStore((state) => state.updateModuleParameterTarget);
+  const updateAnnealingZoneSetPoint = useProductionStore((state) => state.updateAnnealingZoneSetPoint);
 
   const handleApply = (recipeId: string) => {
     const recipe = recipes.find((r) => r.id === recipeId);
@@ -31,12 +31,12 @@ export function RecipeSelector({ moduleId, title }: RecipeSelectorProps) {
     applyRecipe(recipeId);
 
     recipe.parameterTargets.forEach(({ paramId, target }) => {
-      updateModuleParameter(moduleId, paramId, target);
+      updateModuleParameterTarget(moduleId, paramId, target);
     });
 
     if (moduleId === 'annealing' && recipe.zoneSetPoints) {
       recipe.zoneSetPoints.forEach(({ zoneId, setPoint }) => {
-        updateAnnealingZone(zoneId, setPoint);
+        updateAnnealingZoneSetPoint(zoneId, setPoint);
       });
     }
 

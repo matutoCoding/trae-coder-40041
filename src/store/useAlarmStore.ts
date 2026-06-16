@@ -150,7 +150,7 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
     }
   },
 
-  addAlarm: (alarmData) =>
+  addAlarm: (alarmData) => {
     set((state) => {
       const newAlarm: Alarm = {
         ...alarmData,
@@ -161,9 +161,11 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
       return {
         activeAlarms: [newAlarm, ...state.activeAlarms],
       };
-    }),
+    });
+    get().saveToStorage();
+  },
 
-  acknowledgeAlarm: (alarmId, operatorName = '操作员') =>
+  acknowledgeAlarm: (alarmId, operatorName = '操作员') => {
     set((state) => {
       const now = new Date();
       const updatedAlarms = state.activeAlarms.map((alarm) =>
@@ -182,9 +184,11 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
           ? [alarmToHistory, ...state.alarmHistory].slice(0, MAX_HISTORY_ALARMS)
           : state.alarmHistory,
       };
-    }),
+    });
+    get().saveToStorage();
+  },
 
-  acknowledgeAllAlarms: (operatorName = '操作员') =>
+  acknowledgeAllAlarms: (operatorName = '操作员') => {
     set((state) => {
       const now = new Date();
       const unacknowledged = state.activeAlarms.filter((a) => !a.acknowledged);
@@ -204,12 +208,16 @@ export const useAlarmStore = create<AlarmState>((set, get) => ({
         activeAlarms: updatedAlarms,
         alarmHistory: [...newHistoryItems, ...state.alarmHistory].slice(0, MAX_HISTORY_ALARMS),
       };
-    }),
+    });
+    get().saveToStorage();
+  },
 
-  clearAlarm: (alarmId) =>
+  clearAlarm: (alarmId) => {
     set((state) => ({
       activeAlarms: state.activeAlarms.filter((a) => a.id !== alarmId),
-    })),
+    }));
+    get().saveToStorage();
+  },
 
   getFilteredAlarms: (filters) => {
     const state = get();

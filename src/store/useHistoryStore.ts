@@ -40,9 +40,11 @@ const initParameterHistory = (): Record<string, TrendDataPoint[]> => {
     { key: 'annealing_a5', base: 15, variance: 2 },
     { key: 'galvanizing_g1', base: 460, variance: 5 },
     { key: 'galvanizing_g2', base: 0.2, variance: 0.03 },
+    { key: 'galvanizing_g3', base: 0.03, variance: 0.01 },
     { key: 'air-knife_ak1', base: 0.5, variance: 0.1 },
     { key: 'air-knife_ak6', base: 100, variance: 8 },
     { key: 'cooling_c3', base: 125, variance: 10 },
+    { key: 'passivation_p2', base: 800, variance: 50 },
     { key: 'passivation_p4', base: 9, variance: 1.5 },
   ];
 

@@ -32,7 +32,9 @@ interface ProductionState {
   alarms: Alarm[];
   lineSpeedHistory: LineSpeedData[];
   updateModuleParameter: (moduleId: ModuleId, paramId: string, value: number) => void;
+  updateModuleParameterTarget: (moduleId: ModuleId, paramId: string, target: number) => void;
   updateAnnealingZone: (zoneId: string, actual: number) => void;
+  updateAnnealingZoneSetPoint: (zoneId: string, setPoint: number) => void;
   acknowledgeAlarm: (alarmId: string) => void;
   toggleLine: () => void;
   setLineSpeed: (speed: number) => void;
@@ -87,11 +89,39 @@ export const useProductionStore = create<ProductionState>((set, get) => ({
       return { modules: newModules };
     }),
 
+  updateModuleParameterTarget: (moduleId, paramId, target) =>
+    set((state) => {
+      const newModules = state.modules.map((module) => {
+        if (module.id !== moduleId) return module;
+        return {
+          ...module,
+          parameters: module.parameters.map((param) => {
+            if (param.id !== paramId) return param;
+            const newTarget = Math.max(param.min, Math.min(param.max, target));
+            return {
+              ...param,
+              target: newTarget,
+            };
+          }),
+        };
+      });
+      return { modules: newModules };
+    }),
+
   updateAnnealingZone: (zoneId, actual) =>
     set((state) => ({
       annealingZones: state.annealingZones.map((zone) =>
         zone.id === zoneId
           ? { ...zone, actual, deviation: Number((actual - zone.setPoint).toFixed(1)) }
+          : zone
+      ),
+    })),
+
+  updateAnnealingZoneSetPoint: (zoneId, setPoint) =>
+    set((state) => ({
+      annealingZones: state.annealingZones.map((zone) =>
+        zone.id === zoneId
+          ? { ...zone, setPoint, deviation: Number((zone.actual - setPoint).toFixed(1)) }
           : zone
       ),
     })),

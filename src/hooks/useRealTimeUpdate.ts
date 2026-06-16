@@ -37,7 +37,7 @@ export const useRealTimeUpdate = () => {
       );
       updateModuleParameter(moduleId, param.id, fixedValue);
 
-      if (['a2', 'a3', 'a5', 'g1', 'g2', 'ak6', 'c3', 'p4'].includes(param.id)) {
+      if (['a2', 'a3', 'a5', 'g1', 'g2', 'g3', 'ak1', 'ak6', 'c3', 'p2', 'p4'].includes(param.id)) {
         appendParameterPoint(`${moduleId}_${param.id}`, {
           time: timeStr,
           value: fixedValue,

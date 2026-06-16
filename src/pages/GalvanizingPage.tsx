@@ -4,7 +4,6 @@ import { DataCard } from '@/components/DataCard';
 import { RecipeSelector } from '@/components/RecipeSelector';
 import { useModuleData } from '@/store/useProductionStore';
 import { useHistoryStore } from '@/store/useHistoryStore';
-import { temperatureHistory } from '@/data/mockData';
 
 export default function GalvanizingPage() {
   const moduleData = useModuleData('galvanizing');
@@ -95,7 +94,7 @@ export default function GalvanizingPage() {
             height={200}
           />
           <TrendChart
-            data={temperatureHistory(0.03, 0.01)}
+            data={getParameterHistory('galvanizing_g3')}
             title="铁含量趋势"
             unit="%"
             color="#FFC107"
