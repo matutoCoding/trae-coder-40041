@@ -17,6 +17,8 @@ import { Search, Filter, Download, FileText, CheckCircle, AlertTriangle, XCircle
 import { StatusIndicator } from '@/components/StatusIndicator';
 import { AlarmHistoryPanel } from '@/components/AlarmHistoryPanel';
 import { useProductionStore } from '@/store/useProductionStore';
+import { useRecipeStore } from '@/store/useRecipeStore';
+import { useHistoryStore } from '@/store/useHistoryStore';
 import { moduleNames } from '@/data/mockData';
 import type { QualityLevel } from '@/types';
 import { generateStableQuality } from '@/lib/stableData';
@@ -313,10 +315,55 @@ export default function QualityPage() {
 
       {selectedBatch && (() => {
         const batch = batchesWithQuality.find((b) => b.id === selectedBatch);
+        const recipes = useRecipeStore.getState().recipes;
+        const currentRecipes = useRecipeStore.getState().currentRecipes;
+        const getParameterHistory = useHistoryStore.getState().getParameterHistory;
         if (!batch || !batch.quality) return null;
         const q = batch.quality;
         const qStyle = qualityLevelStyles[q.qualityLevel];
         const isQualified = (val: number, min: number, max: number) => val >= min && val <= max;
+
+        const recipeModuleIds: Array<{ id: 'annealing' | 'galvanizing' | 'air-knife' | 'passivation'; label: string }> = [
+          { id: 'annealing', label: '退火炉' },
+          { id: 'galvanizing', label: '锌锅' },
+          { id: 'air-knife', label: '气刀' },
+          { id: 'passivation', label: '钝化' },
+        ];
+
+        const getRecipeForModule = (moduleId: 'annealing' | 'galvanizing' | 'air-knife' | 'passivation') => {
+          if (batch.recipeId) {
+            const recipe = recipes.find((r) => r.id === batch.recipeId && r.moduleId === moduleId);
+            if (recipe) return recipe;
+          }
+          const currentId = currentRecipes[moduleId];
+          if (currentId) {
+            return recipes.find((r) => r.id === currentId);
+          }
+          return recipes.find((r) => r.moduleId === moduleId);
+        };
+
+        const keyParams = [
+          { key: 'annealing_a2', name: '加热段温度', unit: '°C', min: 800, max: 900 },
+          { key: 'annealing_a3', name: '均热段温度', unit: '°C', min: 850, max: 900 },
+          { key: 'galvanizing_g1', name: '锌锅温度', unit: '°C', min: 450, max: 465 },
+          { key: 'galvanizing_g2', name: '铝含量', unit: '%', min: 0.15, max: 0.25 },
+          { key: 'air-knife_ak1', name: '气刀压力', unit: 'bar', min: 0.3, max: 0.7 },
+          { key: 'air-knife_ak6', name: '锌层重量', unit: 'g/m²', min: 95, max: 105 },
+          { key: 'passivation_p4', name: '钝化液浓度', unit: 'g/L', min: 6, max: 12 },
+        ];
+
+        const calcStats = (paramKey: string, min: number, max: number) => {
+          const history = getParameterHistory(paramKey);
+          if (!history || history.length === 0) {
+            return { avg: 0, max: 0, min: 0, exceedCount: 0 };
+          }
+          const values = history.map((h) => h.value);
+          const avg = values.reduce((a, b) => a + b, 0) / values.length;
+          const maxVal = Math.max(...values);
+          const minVal = Math.min(...values);
+          const exceedCount = values.filter((v) => v < min || v > max).length;
+          return { avg, max: maxVal, min: minVal, exceedCount };
+        };
 
         return (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedBatch(null)}>
@@ -339,6 +386,82 @@ export default function QualityPage() {
                       <div className="text-industrial-textMuted">质量等级</div>
                       <div className={`text-lg font-bold ${qStyle.color}`}>{q.qualityLevel}</div>
                     </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-industrial-textSecondary mb-2">工艺配方记录</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {recipeModuleIds.map(({ id, label }) => {
+                      const recipe = getRecipeForModule(id);
+                      return (
+                        <div key={id} className="p-3 bg-industrial-bgLight/30 rounded-sm">
+                          <div className="text-xs text-industrial-textMuted mb-1">{label}</div>
+                          <div className="text-sm font-medium text-industrial-text mb-1">
+                            {recipe?.name || '标准配方'}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mb-1">
+                            {recipe?.steelGrade && (
+                              <span className="px-1.5 py-0.5 text-xs bg-industrial-orange/20 text-industrial-orange rounded-sm">
+                                {recipe.steelGrade}
+                              </span>
+                            )}
+                            {recipe?.coatingClass && (
+                              <span className="px-1.5 py-0.5 text-xs bg-industrial-success/20 text-industrial-success rounded-sm">
+                                {recipe.coatingClass}
+                              </span>
+                            )}
+                            {!recipe?.steelGrade && !recipe?.coatingClass && (
+                              <span className="px-1.5 py-0.5 text-xs bg-industrial-textMuted/20 text-industrial-textMuted rounded-sm">
+                                标准
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-industrial-textMuted line-clamp-2">
+                            {recipe?.description || '当前在用标准配方'}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-medium text-industrial-textSecondary mb-2">生产期间关键参数摘要</h4>
+                  <div className="bg-industrial-bgLight/30 rounded-sm p-3">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-industrial-textMuted text-xs">
+                          <th className="text-left pb-2 font-normal">参数名称</th>
+                          <th className="text-right pb-2 font-normal">平均值</th>
+                          <th className="text-right pb-2 font-normal">最大值</th>
+                          <th className="text-right pb-2 font-normal">最小值</th>
+                          <th className="text-right pb-2 font-normal">超标次数</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-industrial-text">
+                        {keyParams.map((param) => {
+                          const stats = calcStats(param.key, param.min, param.max);
+                          return (
+                            <tr key={param.key} className="border-t border-industrial-border/30">
+                              <td className="py-1.5 text-left">{param.name}</td>
+                              <td className="py-1.5 text-right font-mono">
+                                {stats.avg.toFixed(param.unit === '%' || param.unit === 'bar' ? 2 : 1)} {param.unit}
+                              </td>
+                              <td className="py-1.5 text-right font-mono text-industrial-warning">
+                                {stats.max.toFixed(param.unit === '%' || param.unit === 'bar' ? 2 : 1)}
+                              </td>
+                              <td className="py-1.5 text-right font-mono text-industrial-steelLight">
+                                {stats.min.toFixed(param.unit === '%' || param.unit === 'bar' ? 2 : 1)}
+                              </td>
+                              <td className={`py-1.5 text-right font-mono ${stats.exceedCount > 0 ? 'text-industrial-alarm' : 'text-industrial-success'}`}>
+                                {stats.exceedCount}次
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 

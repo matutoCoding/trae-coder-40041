@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Filter, History, User, Clock, AlertTriangle, Info, AlertCircle, ChevronDown, CheckCircle2 } from 'lucide-react';
-import type { Alarm, AlarmLevel, ModuleId } from '@/types';
+import { Filter, History, User, Clock, AlertTriangle, Info, AlertCircle, ChevronDown, CheckCircle2, RotateCcw } from 'lucide-react';
+import type { Alarm, AlarmLevel, ModuleId, AlarmStatus } from '@/types';
 import { moduleNames } from '@/data/mockData';
 import { useAlarmStore } from '@/store/useAlarmStore';
 
@@ -10,10 +10,17 @@ const levelConfig = {
   alarm: { icon: AlertCircle, color: 'text-industrial-alarm bg-industrial-alarm/20 border-industrial-alarm/30', label: '报警' },
 };
 
+const statusConfig = {
+  active: { color: 'bg-industrial-alarm/20 text-industrial-alarm animate-pulse', label: '活动' },
+  acknowledged: { color: 'bg-industrial-warning/20 text-industrial-warning', label: '已确认' },
+  resolved: { color: 'bg-industrial-success/20 text-industrial-success', label: '已恢复' },
+};
+
 interface FilterState {
   moduleId: ModuleId | 'all';
   level: AlarmLevel | 'all';
-  acknowledged: 'all' | 'yes' | 'no';
+  status: AlarmStatus | 'all';
+  batchId: string;
 }
 
 const CURRENT_OPERATOR = '当班操作员';
@@ -22,7 +29,8 @@ export function AlarmHistoryPanel() {
   const [filters, setFilters] = useState<FilterState>({
     moduleId: 'all',
     level: 'all',
-    acknowledged: 'all',
+    status: 'all',
+    batchId: '',
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -30,6 +38,7 @@ export function AlarmHistoryPanel() {
   const alarmHistory = useAlarmStore((state) => state.alarmHistory);
   const acknowledgeAlarm = useAlarmStore((state) => state.acknowledgeAlarm);
   const acknowledgeAllAlarms = useAlarmStore((state) => state.acknowledgeAllAlarms);
+  const resolveAlarm = useAlarmStore((state) => state.resolveAlarm);
   const saveAlarms = useAlarmStore((state) => state.saveToStorage);
 
   const allAlarms: Alarm[] = [...activeAlarms, ...alarmHistory];
@@ -37,10 +46,8 @@ export function AlarmHistoryPanel() {
   const filteredAlarms = allAlarms.filter((alarm) => {
     if (filters.moduleId !== 'all' && alarm.moduleId !== filters.moduleId) return false;
     if (filters.level !== 'all' && alarm.level !== filters.level) return false;
-    if (filters.acknowledged !== 'all') {
-      const isAck = filters.acknowledged === 'yes';
-      if (alarm.acknowledged !== isAck) return false;
-    }
+    if (filters.status !== 'all' && alarm.status !== filters.status) return false;
+    if (filters.batchId && !alarm.batchId?.toLowerCase().includes(filters.batchId.toLowerCase())) return false;
     return true;
   });
 
@@ -54,10 +61,15 @@ export function AlarmHistoryPanel() {
     });
   };
 
-  const unacknowledgedCount = activeAlarms.filter((a) => !a.acknowledged).length;
+  const unacknowledgedCount = activeAlarms.filter((a) => a.status === 'active').length;
 
   const handleAcknowledge = (id: string) => {
     acknowledgeAlarm(id, CURRENT_OPERATOR);
+    saveAlarms();
+  };
+
+  const handleResolve = (id: string) => {
+    resolveAlarm(id);
     saveAlarms();
   };
 
@@ -80,10 +92,11 @@ export function AlarmHistoryPanel() {
     { value: 'alarm', label: '报警' },
   ];
 
-  const ackOptions: Array<{ value: 'all' | 'yes' | 'no'; label: string }> = [
+  const statusOptions: Array<{ value: AlarmStatus | 'all'; label: string }> = [
     { value: 'all', label: '全部状态' },
-    { value: 'no', label: '未确认' },
-    { value: 'yes', label: '已确认' },
+    { value: 'active', label: '活动' },
+    { value: 'acknowledged', label: '已确认' },
+    { value: 'resolved', label: '已恢复' },
   ];
 
   return (
@@ -115,7 +128,7 @@ export function AlarmHistoryPanel() {
 
       {showFilters && (
         <div className="p-4 border-b border-industrial-border bg-industrial-bgLight/30">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
             <SelectFilter
               label="工艺模块"
               value={filters.moduleId}
@@ -129,11 +142,21 @@ export function AlarmHistoryPanel() {
               onChange={(v) => setFilters({ ...filters, level: v as AlarmLevel | 'all' })}
             />
             <SelectFilter
-              label="确认状态"
-              value={filters.acknowledged}
-              options={ackOptions}
-              onChange={(v) => setFilters({ ...filters, acknowledged: v as 'all' | 'yes' | 'no' })}
+              label="报警状态"
+              value={filters.status}
+              options={statusOptions}
+              onChange={(v) => setFilters({ ...filters, status: v as AlarmStatus | 'all' })}
             />
+            <div>
+              <label className="block text-xs text-industrial-textMuted mb-1.5">钢卷号</label>
+              <input
+                type="text"
+                value={filters.batchId}
+                onChange={(e) => setFilters({ ...filters, batchId: e.target.value })}
+                placeholder="输入钢卷号模糊搜索"
+                className="w-full bg-industrial-bgCard border border-industrial-border rounded-sm px-3 py-2 text-sm text-industrial-text focus:outline-none focus:border-industrial-orange"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -150,17 +173,20 @@ export function AlarmHistoryPanel() {
               <tr className="text-industrial-textMuted text-xs">
                 <th className="text-left p-3 border-b border-industrial-border w-20">级别</th>
                 <th className="text-left p-3 border-b border-industrial-border w-28">模块</th>
-                <th className="text-left p-3 border-b border-industrial-border">报警信息</th>
+                <th className="text-left p-3 border-b border-industrial-border w-36">钢卷</th>
+                <th className="text-left p-3 border-b border-industrial-border">信息</th>
                 <th className="text-left p-3 border-b border-industrial-border w-40">发生时间</th>
                 <th className="text-left p-3 border-b border-industrial-border w-24">状态</th>
                 <th className="text-left p-3 border-b border-industrial-border w-32">确认人</th>
                 <th className="text-left p-3 border-b border-industrial-border w-40">确认时间</th>
+                <th className="text-left p-3 border-b border-industrial-border w-40">恢复时间</th>
                 <th className="text-left p-3 border-b border-industrial-border w-24">操作</th>
               </tr>
             </thead>
             <tbody>
               {filteredAlarms.map((alarm) => {
                 const config = levelConfig[alarm.level];
+                const statusInfo = statusConfig[alarm.status];
                 const Icon = config.icon;
                 return (
                   <tr key={alarm.id} className="border-b border-industrial-border/50 hover:bg-industrial-bgLight/30">
@@ -173,17 +199,20 @@ export function AlarmHistoryPanel() {
                       </div>
                     </td>
                     <td className="p-3 text-industrial-text">{moduleNames[alarm.moduleId]}</td>
+                    <td className="p-3">
+                      {alarm.batchId ? (
+                        <span className="text-industrial-text font-mono text-xs">{alarm.batchId}</span>
+                      ) : (
+                        <span className="text-industrial-textMuted text-xs">-</span>
+                      )}
+                    </td>
                     <td className="p-3 text-industrial-text">{alarm.message}</td>
                     <td className="p-3 text-industrial-textMuted font-mono text-xs">
                       {formatDateTime(alarm.timestamp)}
                     </td>
                     <td className="p-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-sm ${
-                        alarm.acknowledged
-                          ? 'bg-industrial-success/20 text-industrial-success'
-                          : 'bg-industrial-warning/20 text-industrial-warning animate-pulse'
-                      }`}>
-                        {alarm.acknowledged ? '已确认' : '待确认'}
+                      <span className={`text-xs px-2 py-0.5 rounded-sm ${statusInfo.color}`}>
+                        {statusInfo.label}
                       </span>
                     </td>
                     <td className="p-3">
@@ -207,12 +236,29 @@ export function AlarmHistoryPanel() {
                       )}
                     </td>
                     <td className="p-3">
-                      {!alarm.acknowledged ? (
+                      {alarm.resolvedAt ? (
+                        <span className="flex items-center gap-1 text-industrial-textMuted font-mono text-xs">
+                          <RotateCcw className="w-3 h-3" />
+                          {formatDateTime(alarm.resolvedAt)}
+                        </span>
+                      ) : (
+                        <span className="text-industrial-textMuted text-xs">-</span>
+                      )}
+                    </td>
+                    <td className="p-3">
+                      {alarm.status === 'active' ? (
                         <button
                           onClick={() => handleAcknowledge(alarm.id)}
                           className="text-xs text-industrial-orange hover:text-industrial-orangeDark transition-colors"
                         >
                           确认
+                        </button>
+                      ) : alarm.status === 'acknowledged' ? (
+                        <button
+                          onClick={() => handleResolve(alarm.id)}
+                          className="text-xs text-industrial-success hover:text-industrial-success/80 transition-colors"
+                        >
+                          恢复
                         </button>
                       ) : (
                         <span className="text-industrial-textMuted text-xs">

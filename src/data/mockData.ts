@@ -182,9 +182,9 @@ export const equipmentList: Equipment[] = [
 ];
 
 export const activeAlarms: Alarm[] = [
-  { id: 'al1', timestamp: new Date(now.getTime() - 1000 * 60 * 5), moduleId: 'annealing', level: 'warning', message: '炉内露点偏高，已接近上限值', acknowledged: false },
-  { id: 'al2', timestamp: new Date(now.getTime() - 1000 * 60 * 15), moduleId: 'galvanizing', level: 'info', message: '锌液铁含量呈上升趋势，建议排渣', acknowledged: false },
-  { id: 'al3', timestamp: new Date(now.getTime() - 1000 * 60 * 30), moduleId: 'uncoiling', level: 'info', message: '脱脂液浓度下降，请及时补充', acknowledged: true },
+  { id: 'al1', timestamp: new Date(now.getTime() - 1000 * 60 * 5), moduleId: 'annealing', level: 'warning', message: '炉内露点偏高，已接近上限值', acknowledged: false, status: 'active' },
+  { id: 'al2', timestamp: new Date(now.getTime() - 1000 * 60 * 15), moduleId: 'galvanizing', level: 'info', message: '锌液铁含量呈上升趋势，建议排渣', acknowledged: false, status: 'active' },
+  { id: 'al3', timestamp: new Date(now.getTime() - 1000 * 60 * 30), moduleId: 'uncoiling', level: 'info', message: '脱脂液浓度下降，请及时补充', acknowledged: true, status: 'acknowledged' },
 ];
 
 export const moduleDataList: ModuleData[] = [

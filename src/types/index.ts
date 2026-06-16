@@ -4,6 +4,7 @@ export type EquipmentStatus = 'running' | 'idle' | 'maintenance' | 'fault';
 export type BatchStatus = 'pending' | 'running' | 'completed' | 'scrapped';
 export type ModuleId = 'uncoiling' | 'annealing' | 'galvanizing' | 'air-knife' | 'cooling' | 'passivation' | 'coiling';
 export type AlarmLevel = 'info' | 'warning' | 'alarm';
+export type AlarmStatus = 'active' | 'acknowledged' | 'resolved';
 export type QualityLevel = '一级品' | '二级品' | '等外品' | '报废';
 export type RecipeModuleId = 'annealing' | 'galvanizing' | 'air-knife' | 'passivation';
 
@@ -81,6 +82,10 @@ export interface Alarm {
   acknowledged: boolean;
   acknowledgedBy?: string;
   acknowledgedAt?: Date;
+  status: AlarmStatus;
+  resolvedAt?: Date;
+  batchId?: string;
+  value?: number;
 }
 
 export interface TrendDataPoint {
